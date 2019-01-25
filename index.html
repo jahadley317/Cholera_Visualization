@@ -471,7 +471,7 @@
 										 d.outerRadius = outerRadius;
 										 return "translate(" +  arc.centroid(d) +")";})
 			.attr("text-anchor","middle")
-			.text(function(d, i) { return dataset[i]; });
+			.text(function(d, i){if(dataset[i] == "0"){return ""}else{ return dataset[i]; }});
 		var circles = svg.selectAll("g.circle")
 			.data(dataset)
 			.enter()
