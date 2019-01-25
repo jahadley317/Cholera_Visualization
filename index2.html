@@ -1,0 +1,585 @@
+<html><head>
+<meta charset="utf-8">
+<title>Cholera Map - Data Visualization</title>
+<link href= "https://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel= "stylesheet">
+<script text="text/javascript" src="js/d3_v3.js"></script>
+<script text="text/javascript" src="js/jquery-1.10.2.js"></script>
+<script text="text/javascript" src="js/jQuery.ui.js"></script>
+<script text="text/javascript" src="js/d3_queue.js"></script>
+<script text="text/javascript" src="js/d3_array.js"></script>
+<script text="text/javascript" src="js/d3_geo.js"></script>
+<script text="text/javascript" src="js/d3_zoom.js"></script>
+<script text="text/javascript" src="js/d3.slider.js"></script>
+<script>
+	
+	var streetCoords;
+	var pumpLoc;
+	var deathLoc;
+	var deathDays;
+	var deathLoc_filt;
+	var	deathDays_filt;
+	var dateRange = [1,42];
+	var group0 = 0;
+	var group1 = 0;
+	var group2 = 0;
+	var group3 = 0;
+	var group4 = 0;
+	var group5 = 0;
+	var totaldeaths = 0;
+	var dataset = [];
+	var pie = d3.layout.pie();
+	var color = ["#fed976","#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#b10026"];
+	var groupNames = ["Age 0-10", "Age 11-20", "Age 21-40", "Age 41-60", "Age 61-80", "Age 80+"];
+</script>
+<style>
+	.h1{position: absolute; top: 0; left: 0; right: 0; bottom: 95%; text-align:center; font: Impact; font-size: 24px; opacity: 1.0; background-color:gray; color:white; z-index:10;}
+	.map{position: absolute; top: 5%; left: 0; right: 40%; bottom: 5%;
+		border: solid #000; border-width: 5px 2.5px 2.5px 5px;}
+	.line_death{position: absolute; top: 5%; left: 60%; right: 0; bottom: 68%;
+		background: white; border: solid #000; border-width: 5px 5px 2.5px 2.5px;}
+	.pie_age{position: absolute; top: 32%; left: 60%; right: 20%; bottom: 34%;
+		border: solid #000; border-width: 2.5px 5px 2.5px 2.5px; background:white;}
+	.sex{position: absolute; top: 32%; left: 80%; right: 0%; bottom: 34%;
+		border: solid #000; border-width: 2.5px 5px 2.5px 2.5px; background:white;}
+	.filters{position: absolute; top: 66%; left: 60%; right: 0; bottom: 0;
+		border: solid #000; border-width: 2.5px 5px 5px 2.5px; background:white;}
+	.legend{position: absolute; top:95%; left: 0; right: 40%; bottom: 0%;
+		background: gray; border: solid #000; border-width: 2.5px 2.5px 5px 5px;}
+	.label{text-align: center; font: Impact; font-size: 16px;}
+	.svg{align-items: center; width: 100%; height: 100%;}
+	.g{height: 100%, width:100%;}
+	.vertical{transform: rotate(20deg) translate(100,0);}
+	.death_dots:hover{opacity: 1.0;}
+	.gender_bar:hover{opacity: 0.7;}
+	.death_bar:hover{opacity: 0.7; fill:"orange"}
+	.pie_slice:hover{opacity: 0.7;}
+	.ui-slider-range{background:#21B52D; left:0px; right:0px; height: 0.8em; position: absolute; top:35px;}
+	.ui-slider-handle:hover{border: 1px solid #32cd32;}
+	.ui-slider-horizontal .ui-slider-handle{background:#5C5C5C; top:-0.3em; margin-left: -0.6em;}
+	.ui-slider-horizontal{background:black;}
+	.ui-slider-axis{position: relative; z-index:10;}
+	.ui-slider-axis {font-size: 9px;}
+	.slider-container{width: 400px;}
+</style>	
+		
+</head>
+<body>
+<div class="h1">1854 Cholera Outbreak - London</div>
+<div class="map">
+	<svg id="map_plot" width="100%" height="100%">
+		<g id="grid" height="100%" width="100%"></g>
+		<script src="js/grid.js" type="text/javascript"></script>
+	</svg>
+</div>
+<div class="line_death">
+		<svg id="deaths" width="100%" height="100%">
+		<text x="5%" y="12.5">Deaths by Date</text>
+		<line x1="24" y1="30" x2="24" y2="185" stroke="black"></line>
+		<line x1="24" y1="185" x2="650" y2="185" stroke="black" weight="2"></line>
+		<text x="10" y="178" font-size="9">10</text>
+		<line x1="20" y1="175" x2="24" y2="175" stroke="black" weight="2"></line>
+		<text x="10" y="168" font-size="9">20</text>
+		<line x1="20" y1="165" x2="24" y2="165" stroke="black" weight="2"></line>
+		<text x="10" y="158" font-size="9">30</text>
+		<line x1="20" y1="155" x2="24" y2="155" stroke="black" weight="2"></line>
+		<text x="10" y="148" font-size="9">40</text>
+		<line x1="20" y1="145" x2="24" y2="145" stroke="black" weight="2"></line>
+		<text x="10" y="138" font-size="9">50</text>
+		<line x1="20" y1="135" x2="24" y2="135" stroke="black" weight="2"></line>
+		<text x="10" y="128" font-size="9">60</text>
+		<line x1="20" y1="125" x2="24" y2="125" stroke="black" weight="2"></line>
+		<text x="10" y="118" font-size="9">70</text>
+		<line x1="20" y1="115" x2="24" y2="115" stroke="black" weight="2"></line>
+		<text x="10" y="108" font-size="9">80</text>
+		<line x1="20" y1="105" x2="24" y2="105" stroke="black" weight="2"></line>
+		<text x="10" y="98" font-size="9">90</text>
+		<line x1="20" y1="95" x2="24" y2="95" stroke="black" weight="2"></line>
+		<text x="9" y="88" font-size="9">100</text>
+		<line x1="20" y1="85" x2="24" y2="85" stroke="black" weight="2"></line>
+		<text x="9" y="78" font-size="9">110</text>
+		<line x1="20" y1="75" x2="24" y2="75" stroke="black" weight="2"></line>
+		<text x="9" y="68" font-size="9">120</text>
+		<line x1="20" y1="65" x2="24" y2="65" stroke="black" weight="2"></line>
+		<text x="9" y="58" font-size="9">130</text>
+		<line x1="20" y1="55" x2="24" y2="55" stroke="black" weight="2"></line>
+		<text x="9" y="48" font-size="9">140</text>
+		<line x1="20" y1="45" x2="24" y2="45" stroke="black" weight="2"></line>
+		<text x="9" y="38" font-size="9">150</text>
+		<line x1="20" y1="35" x2="24" y2="35" stroke="black" weight="2"></line>
+		<g transform="translate(0,-20)"></g>
+	</svg>
+</div>
+<div class="pie_age" width="50%" height="5px">
+	<text x="50%" y="50%">Deaths by Age Group</text>
+		<svg id="age" width="100%" height="100%">
+		<g transform="translate(0,0)"></g>
+		</svg>
+</div>
+<div class="sex" width="50%" height="50%">
+	<text x="50%" y="5px">Deaths by Sex</text>
+	<svg id="sex" width="100%" height="100%">
+		<line x1="75" y1="206" x2="240" y2="206" stroke="black"></line>
+		<line x1="115" y1="206" x2="115" y2="209" stroke="black"></line>
+		<line x1="195" y1="206" x2="195" y2="209" stroke="black"></line>
+		<line x1="75" y1="206" x2="75" y2="10" stroke="black"></line>
+		<line x1="75" y1="186.5" x2="72" y2="186.5" stroke="black"></line>
+		<text x="63" y="189.5" font-size="9">30</text>
+		<line x1="75" y1="167" x2="72" y2="167" stroke="black"></line>
+		<text x="63" y="170" font-size="9">60</text>
+		<line x1="75" y1="147.5" x2="72" y2="147.5" stroke="black"></line>
+		<text x="63" y="150.5" font-size="9">90</text>
+		<line x1="75" y1="128" x2="72" y2="128" stroke="black"></line>
+		<text x="60" y="131" font-size="9">120</text>
+		<line x1="75" y1="108.5" x2="72" y2="108.5" stroke="black"></line>
+		<text x="60" y="111.5" font-size="9">150</text>
+		<line x1="75" y1="89" x2="72" y2="89" stroke="black"></line>
+		<text x="60" y="92" font-size="9">180</text>
+		<line x1="75" y1="69.5" x2="72" y2="69.5" stroke="black"></line>
+		<text x="60" y="72.5" font-size="9">210</text>
+		<line x1="75" y1="50" x2="72" y2="50" stroke="black"></line>
+		<text x="60" y="53" font-size="9">240</text>
+		<line x1="75" y1="30.5" x2="75" y2="30.5" stroke="black"></line>
+		<text x="60" y="33.5" font-size="9">270</text>
+		<line x1="75" y1="11" x2="72" y2="11" stroke="black"></line>
+		<text x="60" y="14" font-size="9">300</text>
+		<text class="vertical" x="115" y="225" font-family="sans-serif" font-size="10px" text-anchor="middle" fill="black" style="writing-mode: vertical-lr;">Male</text>
+		<text class="vertical" x="195" y="228" font-family="sans-serif" font-size="10px" text-anchor="middle" fill="black" style="writing-mode: vertical-lr;">Female</text>
+		<g transform="translate(85,10)"></g>
+	</svg>
+</div>
+<div class="legend">
+		<svg width="100%" height="100%">
+			<g>
+				<text x="0" y="25" font-size="24" stroke="black">Legend:</text>
+				<text x="100" y="17.5" style="font-size:12; stroke:black">Male:</text>
+				<circle stroke="#0000FF" stroke-width="2" r="5" cx="135" cy="15" fill="none"></circle>
+				<text x="165" y="17.5" style="font-size:12; stroke:black">Female:</text>
+				<circle stroke="#FF69B4" stroke-width="2" r="5" cx="210" cy="15" fill="none"></circle>
+				<text x="230" y="17.5" style="font-size:12; stroke:black">Age Range:</text> 
+				<rect stroke="#fed976" fill="#fed976" x="300" y="5" width="120" height="10"></rect>
+				<text x="335" y="35" style="font-size:12; stroke:black">0-10 Years</text>
+				<rect stroke="#feb24c" fill="#feb24c" x="420" y="5" width="120" height="10"></rect>
+				<text x="455" y="35" style="font-size:12; stroke:black">11-20 Years</text>
+				<rect stroke="#fd8d3c" fill="#fd8d3c" x="540" y="5" width="120" height="10"></rect>
+				<text x="575" y="35" style="font-size:12; stroke:black">21-40 Years</text>
+				<rect stroke="#fc4e2a" fill="#fc4e2a" x="660" y="5" width="120" height="10"></rect>
+				<text x="695" y="35" style="font-size:12; stroke:black">41-60 Years</text>
+				<rect stroke="#e31a1c" fill="#e31a1c" x="780" y="5" width="120" height="10"></rect>
+				<text x="815" y="35" style="font-size:12; stroke:black">61-80 Years</text>
+				<rect stroke="#b10026" fill="#b10026" x="900" y="5" width="120" height="10"></rect>
+				<text x="935" y="35" style="font-size:12; stroke:black">80+ Years</text>
+			</g>
+		</svg>
+</div>
+<div class="filters">
+	<div class="slider-container" style="left:20%;">
+		<b><p style="font-size:15" id="date" x="30px">Select Day Range: 1 to 42</p></b>
+		<div id="date_slider" class="ui-slider-horizontal" style="left:5%;" width = "100%" min="1" max="42"></div>
+	</div>
+	<div id="gender_select" width="60%">
+		<p style="font-size:15" id="gender_filter"><b>Select Genders: </b></p>
+		<input type="checkbox" id="male" name="male" value="0" checked="checked" onclick="filterData(deathLoc, deathDays)">Male <input type="checkbox" id="female" name="female" value="1" checked="checked" onclick="filterData(deathLoc, deathDays)">Female<br>
+	</div>
+	<div id="age_select" width="60%">
+		<p style="font-size:15" id="age_filter"><b>Select Age Ranges: </b></p>
+		<input type="checkbox" id="age0" name="age0" value="0" checked="checked" onclick="filterData(deathLoc, deathDays)">0-10 <input type="checkbox" id="age1" name="age1" value="1" checked="checked" onclick="filterData(deathLoc, deathDays)">11-20<input type="checkbox" id="age2" name="age2" value="2" checked="checked" onclick="filterData(deathLoc, deathDays)">21-40<input type="checkbox" id="age3" name="age3" value="3" checked="checked" onclick="filterData(deathLoc, deathDays)">41-60<input type="checkbox" id="age4" name="age4" value="4" checked="checked" onclick="filterData(deathLoc, deathDays)">61-80<input type="checkbox" id="age5" name="age5" value="5" checked="checked" onclick="filterData(deathLoc, deathDays)">80+<br>
+	</div>
+</div>
+<script>
+	d3.queue()
+	.defer(d3.json, "data/streets.json")
+	.defer(d3.csv, "data/pumps.csv")
+	.defer(d3.csv, "data/deaths_age_sex.csv")
+	.defer(d3.csv, "data/deathdays.csv")
+	.await(extractionTool);
+	
+	function extractionTool(error, street, pump, death, days) {
+		if (error) {
+		console.log(error);
+		}
+		
+		streetCoords = street;
+		
+		d3.select("#map_plot").append("g")
+				.attr("id", "drawn_map")
+				.attr("width", "100%")
+    			.attr("height", "100%")
+				.style("border", "2.0px solid #000000")
+    			.attr("x", "20px")
+    			.attr("y", "20px")		
+		d3.select("#drawn_map").selectAll("path").data(streetCoords).enter()
+				.append("path")
+				.attr("d", function(d,i){var streets = ["M"]; 
+										 for(i=0; i<d.length; i++){
+											 streets.push(d[i].x*43)
+											 streets.push(900 - d[i].y*43)
+											 if(d.length - i > 1){
+												 streets.push("L")
+											 }else{break}}
+										 return streets.join(" ")})
+				.style("stroke", "#000000")
+				.attr("vector-effect", "non-scaling-stroke")
+				.attr("fill", "none");
+		
+		pumpLoc = pump;
+		
+		d3.select("#drawn_map").selectAll("image").data(pumpLoc).enter()
+				.append("image")
+				.attr("class", "water_pump")
+				.attr("href", "img/WaterPump.png")
+				.attr("width", 30)
+				.attr("height", 30)
+				.attr("x", function(d){return d.x*43 - 15})
+				.attr("y", function(d){return 885 - d.y*43});
+		
+		d3.select("#map_plot")
+				.call(d3.behavior.zoom().on("zoom", function() {
+				d3.select("#map_plot").attr("transform", "translate(" + d3.event.translate +")"+" scale("+d3.event.scale + ")")
+				}));
+		
+		deathLoc = death;
+		deathDays = days;
+		deathLoc_filt = death;
+		deathDays_filt = days;
+		
+		
+		drawDeaths();
+		drawBarChart();
+		drawGenBar();
+		drawPieChart();
+			};
+	</script>
+	<script>
+	function drawDeaths(){
+			d3.selectAll(".death_dots").remove()
+			d3.select("#drawn_map").selectAll("circle").data(deathLoc_filt).enter()
+				.append("circle")
+				.attr("class", "death_dots")
+				.attr("cx", function(d){return d.x*43 - 20})
+				.attr("cy", function(d){return d.y*43 - 20})
+				.attr("r", 5)
+				.attr("stroke", function(d){return d.stroke})
+				.attr("stroke-width", 3)
+				.attr("fill", function(d){return d.fill})
+				.attr("opacity", 0.5)
+				.on("mouseover", function(d){
+					if(d.age == 0){
+						if(d.gender == 0){
+							console.log("Death# "+d.Number+", Male, Age 0-10, "+d.date)
+						}else{
+							console.log("Death# "+d.Number+", Female, Age 0-10, "+d.date)
+						}
+					}if(d.age == 1){
+						if(d.gender == 0){
+							console.log("Death# "+d.Number+", Male, Age 10-20, "+d.date)
+						}else{
+							console.log("Death# "+d.Number+", Female, Age 10-20, "+d.date)
+					}
+					}if(d.age == 2){
+						if(d.gender == 0){
+							console.log("Death# "+d.Number+", Male, Age 21-40, "+d.date)
+						}else{
+							console.log("Death# "+d.Number+", Female, Age 21-40, "+d.date)
+						}
+					}if(d.age == 3){
+						if(d.gender == 0){
+							console.log("Death# "+d.Number+", Male, Age 41-60, "+d.date)
+						}else{
+							console.log("Death# "+d.Number+", Female, Age 41-60, "+d.date)
+						}
+					}if(d.age == 4){
+						if(d.gender == 0){
+							console.log("Death# "+d.Number+", Male, Age 61-80, "+d.date)
+						}else{
+							console.log("Death# "+d.Number+", Female, Age 61-80, "+d.date)
+						}
+					}if(d.age == 5){
+						if(d.gender == 0){
+							console.log("Death# "+d.Number+", Male, Age 80+ "+d.date)
+						}else{
+							console.log("Death# "+d.Number+", Female, Age 80+ "+d.date)
+						}
+					}				
+				})
+				.attr("title", function(d){return "Testing "+d.date});
+	};
+		
+	function drawBarChart(){
+		d3.selectAll(".datetick").remove()
+		d3.selectAll(".death_bar").remove()
+		d3.selectAll(".datelabel").remove()
+		d3.select("#deaths").select("g").selectAll("line").data(deathDays_filt).enter()
+			.append("line")
+			.attr("class", "datetick")
+			.attr("stroke","black")
+			.attr("x1", function(d){return d.day*15+15})
+			.attr("y1", 205)
+			.attr("x2", function(d){return d.day*15+15})
+			.attr("y2", 214)
+		d3.select("#deaths").select("g").selectAll("rect").data(deathDays_filt).enter()
+			.append("rect")
+			.attr("class", "death_bar")
+			.attr("stroke","black")
+			.attr("fill", "green")
+			.attr("width",15)
+			.attr("height",function(d){
+				if(document.getElementById('male').checked == true && document.getElementById('female').checked == true){
+					return Number(d.maledeaths) + Number(d.femaledeaths)
+					}if(document.getElementById('male').checked == true && document.getElementById('female').checked == false){
+						return Number(d.maledeaths)
+					}if(document.getElementById('male').checked == false && document.getElementById('female').checked == true){
+							return Number(d.femaledeaths)}})
+			.attr("x",function(d){return (d.day*15)+7.5})
+			.attr("y",function(d){
+				if(document.getElementById('male').checked == true && document.getElementById('female').checked == true){
+					return 203 - (Number(d.maledeaths) + Number(d.femaledeaths))
+					}if(document.getElementById('male').checked == true && document.getElementById('female').checked == false){
+						return 203 - Number(d.maledeaths)
+					}if(document.getElementById('male').checked == false && document.getElementById('female').checked == true){
+							return 203 - Number(d.femaledeaths)}})
+			.on("mouseover", function(d){
+				console.log("Total Deaths on " + d.date + ": " + [Number(d.maledeaths) + Number(d.femaledeaths)] + " Deaths to date: " + d.totaldeaths)
+			})
+		d3.select("#deaths").select("g").selectAll("text").data(deathDays_filt).enter()
+			.append("text")
+			.attr("class", "datelabel")
+			.attr("class","vertical")
+			.attr("x",function(d){return d.day*15+15})
+			.attr("y", 230)
+			.attr("text-anchor","middle")
+			.attr("style","writing-mode: vertical-lr;")
+			.attr("font-size","8")
+			.text(function(d){return d.date;})
+	}
+
+	function drawGenBar(){
+		d3.selectAll(".gender_bar").remove()
+		var MAX_GEN_HEIGHT = 195;
+		var GEN_WIDTH = 40;
+		var deathMale = 0;
+		var deathFemale = 0;
+		var gen_color = ["blue", "#C71585"];
+		deathLoc_filt.forEach(function(d) {
+    		if(d.gender === "0"){
+				deathMale = deathMale + 1;
+			}else{
+				if(d.gender === "1"){
+					deathFemale = deathFemale + 1;
+				}
+			}
+		})
+		var deathMF = [deathMale, deathFemale];
+		var r = 287;
+		d3.select("#sex").select("g").selectAll("rect").data(deathMF).enter()
+			.append("rect")
+			.attr("class", "gender_bar")
+			.attr("stroke","black")
+			.attr("fill", function(d,i){return gen_color[i];})
+			.attr("width",GEN_WIDTH)
+			.attr("height",function(t,e){return t/r*MAX_GEN_HEIGHT})
+			.attr("x",function(r,t){return GEN_WIDTH*2*t+10;})
+			.attr("y",function(t,e){return(1-t/r)*MAX_GEN_HEIGHT})
+			.text(function(d,i){return deathMF[i]})
+			.on("mouseover", function(d){
+				console.log("Male: " + deathMF[0] + ", Female: " + deathMF[1])
+			});
+	};
+	
+	function drawPieChart(){
+		d3.selectAll("g.arc").remove()
+		d3.selectAll("guidecircles").remove()
+		d3.selectAll("guidetext").remove()
+		group0 = 0;
+		group1 = 0;
+		group2 = 0;
+		group3 = 0;
+		group4 = 0;
+		group5 = 0;
+		totaldeaths = 0;
+		dataset = [];
+		
+		for(i=0; i < deathLoc_filt.length; i++){
+			if(deathLoc_filt[i].age === "0"){
+				group0 = group0 + 1;
+				totaldeaths = totaldeaths + 1;
+			}else{
+				if(deathLoc_filt[i].age === "1"){
+					group1 = group1 + 1;
+					totaldeaths = totaldeaths + 1;
+				}else{
+					if(deathLoc_filt[i].age === "2"){
+						group2 = group2 + 1;
+						totaldeaths = totaldeaths + 1;
+					}else{
+						if(deathLoc_filt[i].age === "3"){
+							group3 = group3 + 1;
+							totaldeaths = totaldeaths + 1;
+						}else{
+							if(deathLoc_filt[i].age === "4"){
+								group4 = group4 + 1;
+								totaldeaths = totaldeaths + 1;
+							}else{
+								if(deathLoc_filt[i].age === "5"){
+									group5 = group5 + 1;
+									totaldeaths = totaldeaths + 1;
+								}else{
+									return "There is an error in the code";
+								}
+							}
+						}
+					}
+				}
+			}
+		};
+		dataset.push(group0,group1,group2,group3,group4,group5);
+		
+		var w = 210;
+		var h = 210;
+		var outerRadius = w/2;
+		var innerRadius = 0;
+		var arc = d3.svg.arc()
+			.innerRadius(innerRadius)
+			.outerRadius(outerRadius)
+		var svg = d3.select("#age")
+		var arcs = svg.selectAll("g.arc")
+			.data(pie(dataset))
+			.enter()
+			.append("g")
+			.attr("class", "arc")
+			.attr("transform", "translate(" + 190 + ", " + 130 + ")" );
+		arcs.append("path")
+			.attr("class", "pie_slice")
+			.attr("fill", function(d,i){if(i == 0){return "#fed976";
+												  }else{if(i == 1){return "#feb24c";
+																  }else{if(i == 2){return "#fd8d3c";
+																				  }else{if(i == 3){return "#fc4e2a";
+																								  }else{if(i == 4){return "#e31a1c";
+																												  }else{if(i == 5){return "#b10026";}
+																													   }
+																									   }
+																					   }
+																	   }
+													   }
+									   })
+			.attr("label", function(d,i){
+				return dataset[i];
+			})
+			.attr("d",arc);
+		arcs.append("text")
+			.attr("class", "pielabels")
+			.attr("transform",function(d){d.innerRadius = 0;
+										 d.outerRadius = outerRadius;
+										 return "translate(" +  arc.centroid(d) +")";})
+			.attr("text-anchor","middle")
+			.text(function(d, i) { return dataset[i]; });
+		var circles = svg.selectAll("g.circle")
+			.data(dataset)
+			.enter()
+			.append("circle")
+			.attr("class","guidecircle")
+			.attr("transform", "translate(" + 10 + ", " + 0 + ")" )
+			.attr("id","guidecircles")
+			.attr("cx","0")
+			.attr("cy",function(d,i){return i*15 + 50;})
+			.attr("r","5")
+			.attr("fill", function(d,i){if(i == 0){return "#fed976";
+												  }else{if(i == 1){return "#feb24c";
+																  }else{if(i == 2){return "#fd8d3c";
+																				  }else{if(i == 3){return "#fc4e2a";
+																								  }else{if(i == 4){return "#e31a1c";
+																												  }else{if(i == 5){return "#b10026";}
+																													   }
+																									   }
+																					   }
+																	   }
+													   }
+									   })
+		d3.select("#age").select("g").selectAll("text").data(groupNames)
+			.enter()
+			.append("text")
+			.attr("class", "guidetext")
+			.attr("transform", "translate(" + 10 + ", " + 0 + ")" )
+			.attr("x","5")
+			.attr("y",function(d,i){return i*15 + 50;})
+			.attr("text-anchor","right")
+			.attr("font-size","12")
+			.text(function(d){return d;})
+			.append("g");
+			
+			
+}
+	
+	$(function sliderMaker(){
+		$("#date_slider").slider({
+			range:true,
+			min: 1,
+			max: 42,
+			values: [1,42],
+			slide: function(event, ui){
+				$("#date").html("Select Day Range: " + ui.values[0] + " to " + ui.values[1]);
+				dateRange = [ui.values[0], ui.values[1]];
+			},
+			stop: function(event, ui){
+			filterData(deathLoc, deathDays);
+			}
+		})
+	});
+	
+	function filterData(deathLoc, deathDays){
+		var male = document.getElementById("#male")
+		var min_day = dateRange[0];
+		var max_day = dateRange[1];
+		var selectedGender = [];
+		var selectedAge = [];
+		if(document.getElementById('male').checked == true){
+			selectedGender.push("0")
+		}
+		if(document.getElementById('female').checked == true){
+			selectedGender.push("1")
+		}
+		if(document.getElementById('age0').checked == true){
+			selectedAge.push("0")
+		}
+		if(document.getElementById('age1').checked == true){
+			selectedAge.push("1")
+		}
+		if(document.getElementById('age2').checked == true){
+			selectedAge.push("2")
+		}
+		if(document.getElementById('age3').checked == true){
+			selectedAge.push("3")
+		}
+		if(document.getElementById('age4').checked == true){
+			selectedAge.push("4")
+		}
+		if(document.getElementById('age5').checked == true){
+			selectedAge.push("5")
+		}
+		var newDeath = deathLoc.filter(function(deathLoc){
+		if(deathLoc.day >= min_day && deathLoc.day <= max_day && selectedGender.includes(deathLoc.gender) && selectedAge.includes(deathLoc.age)){
+			return true;
+		}else{
+			return false;
+		}
+		return newDeath;
+		})
+		deathLoc_filt = newDeath;
+		
+		var newDays = deathDays.filter(function(deathDays){
+		if(deathDays.day >= min_day && deathDays.day <= max_day){
+			return true;
+		}else{
+			return false;
+		}
+		return newDays;
+		})
+		deathDays_filt = newDays;
+		drawDeaths();
+		drawBarChart();
+		drawGenBar();
+		drawPieChart();
+	}
+	//$('input[id="male"]').on("click", filterData(deathLoc, deathDays));
+	</script>
+</body>
+</html>
